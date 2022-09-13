@@ -12,12 +12,28 @@
               <input
                 v-model="ticker"
                 @keydown.enter="add"
+                @input="findChoices"
                 type="text"
                 name="wallet"
                 id="wallet"
                 class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
                 placeholder="Например DOGE"
               />
+            </div>
+            <div
+              class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
+              v-if="choices.length > 0"
+            >
+              <span
+                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
+                v-for="choice in choices"
+                :key="choice"
+                @click="addChoise(choice)"
+                >{{ choice }}</span
+              >
+            </div>
+            <div class="text-sm text-red-600" v-if="alreadyAdded">
+              Такой тикер уже добавлен
             </div>
           </div>
         </div>
@@ -140,11 +156,30 @@ export default {
       tickers: [],
       sel: null,
       graph: [],
+      alreadyAdded: false,
+      choices: [],
     };
+  },
+  created: function () {
+    fetch(`https://min-api.cryptocompare.com/data/all/coinlist?summary=true`)
+      .then((res) => res.json())
+      .then((data) => {
+        const cryptoList = Object.keys(data.Data);
+        localStorage.setItem("cryptonomicon-list", JSON.stringify(cryptoList));
+      });
   },
 
   methods: {
     add() {
+      let isAlreadyAdded = this.tickers.some(
+        (item) => item.name.toUpperCase() === this.ticker.toUpperCase()
+      );
+
+      if (isAlreadyAdded) {
+        this.alreadyAdded = isAlreadyAdded;
+        return;
+      }
+
       const currentTicker = {
         name: this.ticker,
         price: "-",
@@ -165,6 +200,7 @@ export default {
         }
       }, 3000);
       this.ticker = "";
+      this.choices = [];
     },
 
     select(ticker) {
@@ -182,6 +218,19 @@ export default {
       return this.graph.map(
         (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
       );
+    },
+    findChoices() {
+      const cryptoList = JSON.parse(localStorage.getItem("cryptonomicon-list"));
+      if (!cryptoList) return;
+      let filteredList = cryptoList.filter((item) =>
+        item.startsWith(this.ticker.toUpperCase())
+      );
+      filteredList = filteredList.slice(-4);
+      this.choices = filteredList;
+    },
+    addChoise(choise) {
+      this.ticker = choise;
+      this.add();
     },
   },
 };
