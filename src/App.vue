@@ -37,8 +37,8 @@
             <div class="mt-1 relative rounded-md shadow-md">
               <input
                 v-model="ticker"
-                @keydown.enter="add"
                 @keydown="alreadyAdded = false"
+                @keydown.enter="add"
                 @input="findChoices"
                 type="text"
                 name="wallet"
@@ -228,6 +228,7 @@ export default {
           this.graph.push(data.USD);
         }
       }, 3000);
+
       this.ticker = "";
       this.choices = [];
     },
