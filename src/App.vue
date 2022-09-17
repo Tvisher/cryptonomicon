@@ -91,11 +91,15 @@
         <div>
           <button
             class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            v-if="page > 1"
+            @click="page--"
           >
             Назад
           </button>
           <button
             class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            @click="page++"
+            v-if="hasNextPage"
           >
             Вперёд
           </button>
@@ -202,11 +206,20 @@ export default {
       alreadyAdded: false,
       choices: [],
       appLoad: false,
+      hasNextPage: true,
     };
   },
   created() {
     this.loadingListOfCoins();
-
+    const windowData = Object.fromEntries(
+      new URL(window.location).searchParams.entries()
+    );
+    if (windowData.filter) {
+      this.filter = windowData.filter;
+    }
+    if (windowData.page) {
+      this.page = windowData.page;
+    }
     const tickersData = localStorage.getItem("cryptonomicon-list");
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
@@ -228,8 +241,14 @@ export default {
     },
 
     filteredTickers() {
-      return this.tickers.filter(ticker =>ticker.name.toUpperCase().includes(this.filter.trim().toUpperCase());
+      const start = (this.page - 1) * 6;
+      const end = this.page * 6;
+
+      const filteredTickers = this.tickers.filter((ticker) =>
+        ticker.name.toUpperCase().includes(this.filter.trim().toUpperCase())
       );
+      this.hasNextPage = filteredTickers.length > end;
+      return filteredTickers.slice(start, end);
     },
     add() {
       let isAlreadyAdded = this.tickers.some(
@@ -299,6 +318,23 @@ export default {
     addChoise(choise) {
       this.ticker = choise;
       this.add();
+    },
+  },
+  watch: {
+    filter() {
+      this.page = 1;
+      window.history.pushState(
+        null,
+        document.title,
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+      );
+    },
+    page() {
+      window.history.pushState(
+        null,
+        document.title,
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+      );
     },
   },
 };
